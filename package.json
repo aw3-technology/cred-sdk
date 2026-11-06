@@ -41,7 +41,8 @@
   "scripts": {
     "build": "node scripts/build.mjs",
     "test": "vitest run",
-    "prepublishOnly": "node scripts/build.mjs"
+    "prepublishOnly": "node scripts/build.mjs",
+    "prepare": "node scripts/build.mjs"
   },
   "publishConfig": {
     "access": "public"

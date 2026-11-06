@@ -1250,8 +1250,9 @@ export interface CreateHoldParams {
   reason?: string;
   reference_id?: string;
   /**
-   * Informational expiry timestamp (ISO). Stored on the hold for your own
-   * logic; not automatically enforced server-side.
+   * Expiry timestamp (ISO). Capture or release before this time: a hold past
+   * it can be released back to the holder at any time, and capturing it then
+   * returns 409 HOLD_NOT_ACTIVE.
    */
   expires_at?: string;
   metadata?: Record<string, unknown>;
