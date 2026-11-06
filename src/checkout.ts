@@ -19,9 +19,8 @@ export class CheckoutAPI extends BaseResource {
    *
    * Use a `pricing_tier_id` for a pre-defined package, or `credit_type_id` +
    * `amount` for a custom amount priced at the credit type's USD-per-credit
-   * `exchange_rate`. Send `credit_type_id` with a tier too: omitted on a tier
-   * that applies to several credit types, the oldest active one is used
-   * silently.
+   * `exchange_rate`. A tier that applies to several credit types also needs
+   * `credit_type_id`, otherwise 400 CREDIT_TYPE_REQUIRED.
    *
    * `success_url` and `cancel_url` must be on a Cred host or a domain listed
    * under Dashboard → Payments → Allowed redirect domains. On any other domain

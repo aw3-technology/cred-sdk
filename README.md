@@ -130,8 +130,8 @@ await cred.checkout.create({ pricing_tier_id: 'tier_123', credit_type_id: 'ct_12
 await cred.checkout.create({ pricing_tier_id: 'tier_123', credit_type_id: 'ct_123', user_id: 'user_456', save_payment_method: true });
 ```
 
-Always send `credit_type_id` with a tier: omitted on a tier that applies to
-several credit types, the oldest active one is used silently.
+Send `credit_type_id` with a tier: a tier that applies to several credit types
+returns 400 `CREDIT_TYPE_REQUIRED` without it.
 
 `success_url` and `cancel_url` must be https on a Cred host or a domain listed
 under **Dashboard → Payments → Allowed redirect domains** (subdomains included;

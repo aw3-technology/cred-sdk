@@ -291,9 +291,9 @@ export interface CreateCheckoutParams {
   /** A pre-defined package. */
   pricing_tier_id?: string;
   /**
-   * With `pricing_tier_id`: which credit type the tier grants. Always send it:
-   * omitted on a tier that applies to several types, the oldest active one is
-   * used silently. Without a tier: required, the credit type of a custom-amount
+   * With `pricing_tier_id`: which credit type the tier grants. Required when
+   * the tier applies to several types, otherwise 400 CREDIT_TYPE_REQUIRED.
+   * Without a tier: required, the credit type of a custom-amount
    * checkout, priced at its `exchange_rate` (USD per credit).
    */
   credit_type_id?: string;
@@ -462,8 +462,8 @@ export interface ChargeSavedParams {
   /** A one-time (or `both`) tier. */
   pricing_tier_id: string;
   /**
-   * Always send it: omitted on a tier that applies to several credit types,
-   * the oldest active one is used silently.
+   * Required when the tier applies to several credit types, otherwise
+   * 400 CREDIT_TYPE_REQUIRED.
    */
   credit_type_id?: string;
 }
@@ -513,8 +513,8 @@ export interface SaveAutoTopUpParams {
   /** Top up when the balance falls below this many credits (> 0). */
   threshold: number;
   /**
-   * Always send it: omitted on a tier that applies to several credit types,
-   * the rule silently watches the oldest active one.
+   * Required when the tier applies to several credit types, otherwise
+   * 400 CREDIT_TYPE_REQUIRED.
    */
   credit_type_id?: string;
   /** Default true. */
@@ -573,6 +573,7 @@ export type CredErrorCode =
   | "INSUFFICIENT_CREDITS" // 400
   | "USER_NOT_FOUND" // 404
   | "INVALID_CREDIT_TYPE" // 400 — unknown or inactive credit_type_id
+  | "CREDIT_TYPE_REQUIRED" // 400 — tier applies to several credit types
   | "NO_FIELDS_TO_UPDATE" // 400 — PATCH /users with nothing to change
   | "USER_HAS_HISTORY" // 409 — DELETE /users for a user with swap history
   // Pricing tiers
