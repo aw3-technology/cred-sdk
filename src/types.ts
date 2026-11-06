@@ -122,6 +122,11 @@ export interface CreateUserParams extends SignupAttribution {
   external_id: string;
   email?: string;
   name?: string;
+  /**
+   * Your free-form object. On an existing user it replaces the stored one (see
+   * `UpdateUserParams.metadata`). `stripe_account_id` is Cred-only: a value you
+   * send is silently dropped.
+   */
   metadata?: Record<string, unknown>;
   /**
    * EVM address to mint on-chain credits to. Stored as asserted, not verified;
@@ -135,6 +140,11 @@ export interface UpdateUserParams extends SignupAttribution {
   user_email?: string;
   email?: string;
   name?: string;
+  /**
+   * Replaces the stored object. `referral_code` is kept unless you send it.
+   * `stripe_account_id` is Cred-only: the stored value stays and a value you
+   * send is silently dropped.
+   */
   metadata?: Record<string, unknown>;
   /** Pass `null` to detach. Changing the address clears any verification. */
   wallet_address?: string | null;
@@ -281,9 +291,10 @@ export interface CreateCheckoutParams {
   /** A pre-defined package. */
   pricing_tier_id?: string;
   /**
-   * With `pricing_tier_id`: which credit type the tier grants (required when
-   * the tier applies to several). Without it: the credit type of a
-   * custom-amount checkout, priced at its `exchange_rate` (USD per credit).
+   * With `pricing_tier_id`: which credit type the tier grants. Always send it:
+   * omitted on a tier that applies to several types, the oldest active one is
+   * used silently. Without a tier: required, the credit type of a custom-amount
+   * checkout, priced at its `exchange_rate` (USD per credit).
    */
   credit_type_id?: string;
   /** Custom-amount checkout: number of credits to buy (with `credit_type_id`). */
@@ -301,7 +312,14 @@ export interface CreateCheckoutParams {
    * auto top-up). One-time checkouts only.
    */
   save_payment_method?: boolean;
+  /**
+   * https URL on a Cred host or a domain listed under Dashboard → Payments →
+   * Allowed redirect domains (subdomains included; localhost also works). On
+   * any other domain the checkout still succeeds and silently redirects to
+   * Cred's default page.
+   */
   success_url?: string;
+  /** Same rule as `success_url`. */
   cancel_url?: string;
   /**
    * URL of the page the user signed up from. Stored on the purchase and on the
@@ -382,6 +400,10 @@ export interface CancelSubscriptionParams extends SubscriptionTarget {
 }
 
 export interface SubscriptionPortalParams extends SubscriptionTarget {
+  /**
+   * https URL on a Cred host or a domain listed under Dashboard → Payments →
+   * Allowed redirect domains, else `400 REDIRECT_NOT_ALLOWED`.
+   */
   return_url?: string;
   /** Default "payment_method_update". */
   flow?: "payment_method_update" | "overview";
@@ -439,7 +461,10 @@ export interface ChargeSavedParams {
   user_id: string;
   /** A one-time (or `both`) tier. */
   pricing_tier_id: string;
-  /** Needed when the tier applies to several credit types. */
+  /**
+   * Always send it: omitted on a tier that applies to several credit types,
+   * the oldest active one is used silently.
+   */
   credit_type_id?: string;
 }
 
@@ -487,7 +512,10 @@ export interface SaveAutoTopUpParams {
   pricing_tier_id: string;
   /** Top up when the balance falls below this many credits (> 0). */
   threshold: number;
-  /** Needed when the tier applies to several credit types. */
+  /**
+   * Always send it: omitted on a tier that applies to several credit types,
+   * the rule silently watches the oldest active one.
+   */
   credit_type_id?: string;
   /** Default true. */
   enabled?: boolean;
@@ -540,9 +568,11 @@ export type CredErrorCode =
   | "INVALID_IDEMPOTENCY_KEY" // 400 — longer than 255 characters
   | "IDEMPOTENCY_KEY_REUSED" // 409 — same key, different request
   | "IDEMPOTENCY_KEY_REQUIRED" // 400 — charge-saved
+  | "REDIRECT_NOT_ALLOWED" // 400 — payout onboarding / billing portal URL not on an allowed domain
   // Credits, users
   | "INSUFFICIENT_CREDITS" // 400
   | "USER_NOT_FOUND" // 404
+  | "INVALID_CREDIT_TYPE" // 400 — unknown or inactive credit_type_id
   | "NO_FIELDS_TO_UPDATE" // 400 — PATCH /users with nothing to change
   | "USER_HAS_HISTORY" // 409 — DELETE /users for a user with swap history
   // Pricing tiers
@@ -761,8 +791,9 @@ export interface TokenDeposit {
   credits_granted: number;
   /**
    * `credited` — the ledger moved.
-   * `unattributed` — tokens arrived from an address no user has claimed; held,
-   *   not credited. Attach the address to a user to resolve it.
+   * `unattributed` — tokens arrived from an address no user had claimed; held,
+   *   not credited. Attaching the address to a user only matches later
+   *   deposits; it does not credit this one.
    * `observed` — recorded, not yet credited.
    * `rejected` — failed a safety check; `reason` says which.
    */
@@ -1017,13 +1048,13 @@ export interface SaveReferralSettingsParams {
   is_active?: boolean;
   referrer_credits?: number;
   referee_credits?: number;
+  /** `true` makes this program the default (the one requests without `credit_type_id` use). */
+  is_default?: true;
   /**
    * Writes THAT credit type's program (one program per credit type; created on
    * first save). Omitted: the project's default program. `null` (or "") clears
    * the default program's credit type.
    */
-  /** `true` makes this program the default (the one requests without `credit_type_id` use). */
-  is_default?: true;
   credit_type_id?: string | null;
 }
 

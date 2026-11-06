@@ -19,9 +19,13 @@ export interface OnboardPayoutParams {
   user_id?: string;
   /** Player email — recommended for cross-app unified wallets. */
   user_email?: string;
-  /** URL Stripe redirects to after onboarding completes. */
+  /**
+   * URL Stripe redirects to after onboarding completes. Must be https on a Cred
+   * host or a domain listed under Dashboard → Payments → Allowed redirect
+   * domains, else `400 REDIRECT_NOT_ALLOWED`.
+   */
   return_url: string;
-  /** URL Stripe redirects to if the onboarding link expires. */
+  /** URL Stripe redirects to if the onboarding link expires. Same rule as `return_url`. */
   refresh_url: string;
   /** ISO country code for the connected account (default "US"). */
   country?: string;

@@ -36,7 +36,8 @@ export class WalletsAPI extends BaseResource {
    * Attach an address without a signature. The user must already exist.
    *
    * Changing the address clears any previous verification, because the new one
-   * has not been signed for.
+   * has not been signed for. Only later deposits match the address: one already
+   * recorded as `unattributed` stays uncredited.
    *
    * @example
    * ```typescript
@@ -127,8 +128,8 @@ export class WalletsAPI extends BaseResource {
    *
    * Read-only — deposits are written by the on-chain ingest pass, never
    * asserted by a caller. Render `unattributed` rows too: those are tokens that
-   * arrived from an address no user has claimed, and they stay uncredited until
-   * someone attaches that address to a user.
+   * arrived from an address no user had claimed. They stay uncredited: attaching
+   * that address to a user only matches later deposits.
    *
    * @example
    * ```typescript

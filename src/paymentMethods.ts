@@ -58,7 +58,7 @@ export class PaymentMethodsAPI extends BaseResource {
    * @example
    * ```typescript
    * const result = await cred.paymentMethods.chargeSaved(
-   *   { user_id: 'user_123', pricing_tier_id: 'tier_123' },
+   *   { user_id: 'user_123', pricing_tier_id: 'tier_123', credit_type_id: 'ct_123' },
    *   { idempotencyKey: `topup:user_123:${orderId}` },
    * );
    * ```

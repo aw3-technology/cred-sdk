@@ -56,6 +56,7 @@ export class AutoTopUpAPI extends BaseResource {
    * await cred.autoTopUp.save({
    *   user_id: 'user_123',
    *   pricing_tier_id: 'tier_123',
+   *   credit_type_id: 'ct_123',
    *   threshold: 50,
    *   max_per_day: 3,
    * });

@@ -110,7 +110,7 @@ Hosted Stripe checkout. Credits are issued when Stripe confirms the payment.
 // A pricing-tier package
 const { data } = await cred.checkout.create({
   pricing_tier_id: 'tier_123',
-  credit_type_id: 'ct_123',          // needed when the tier applies to several credit types
+  credit_type_id: 'ct_123',          // always send it, see below
   user_id: 'user_456',
   user_email: 'buyer@example.com',
   quantity: 1,                       // seats/units, 1–10000
@@ -124,11 +124,19 @@ await cred.checkout.create({ credit_type_id: 'ct_123', amount: 500, user_id: 'us
 
 // A monthly subscription — only when you send billing: 'recurring'
 // (the tier's billing_type must be 'recurring' or 'both')
-await cred.checkout.create({ pricing_tier_id: 'tier_123', user_id: 'user_456', billing: 'recurring' });
+await cred.checkout.create({ pricing_tier_id: 'tier_123', credit_type_id: 'ct_123', user_id: 'user_456', billing: 'recurring' });
 
 // Keep the card for off-session charges / auto top-up (one-time checkouts only)
-await cred.checkout.create({ pricing_tier_id: 'tier_123', user_id: 'user_456', save_payment_method: true });
+await cred.checkout.create({ pricing_tier_id: 'tier_123', credit_type_id: 'ct_123', user_id: 'user_456', save_payment_method: true });
 ```
+
+Always send `credit_type_id` with a tier: omitted on a tier that applies to
+several credit types, the oldest active one is used silently.
+
+`success_url` and `cancel_url` must be https on a Cred host or a domain listed
+under **Dashboard → Payments → Allowed redirect domains** (subdomains included;
+`localhost` also works). On any other domain the checkout still succeeds and
+silently sends the buyer to Cred's default page.
 
 ## Subscriptions
 
@@ -147,6 +155,9 @@ await cred.subscriptions.cancel({ subscription_id: 'sub_123', at_period_end: fal
 const { data: portal } = await cred.subscriptions.portal({ user_id: 'user_456', return_url: 'https://myapp.com/billing' });
 ```
 
+`return_url` follows the same allowed-domains rule as checkout, but an unlisted
+domain fails with `400 REDIRECT_NOT_ALLOWED`.
+
 ## Saved cards and auto top-up
 
 A card is saved only by a one-time checkout sent with `save_payment_method: true`.
@@ -157,7 +168,7 @@ const { data: card } = await cred.paymentMethods.get('user_456');   // { payment
 // Charge one pack of a one-time tier, buyer absent. The key is required:
 // a retry with the same key returns the first outcome and never charges twice.
 const charge = await cred.paymentMethods.chargeSaved(
-  { user_id: 'user_456', pricing_tier_id: 'tier_123' },
+  { user_id: 'user_456', pricing_tier_id: 'tier_123', credit_type_id: 'ct_123' },
   { idempotencyKey: `topup:user_456:${orderId}` },
 );
 if (charge.success) {
@@ -174,6 +185,7 @@ await cred.paymentMethods.remove('user_456');
 await cred.autoTopUp.save({
   user_id: 'user_456',
   pricing_tier_id: 'tier_123',
+  credit_type_id: 'ct_123',
   threshold: 50,
   max_per_day: 3,      // 1–100, default 5
 });
@@ -228,6 +240,10 @@ const { data: balances } = await cred.users.getBalances('auth0|123456');
 await cred.users.delete('auth0|123456'); // 409 USER_HAS_HISTORY if the user has swapped
 ```
 
+A `metadata` write replaces the stored object, except two keys Cred uses:
+`referral_code` is kept unless you send it, and `stripe_account_id` is Cred-only,
+so the stored value stays and a value you send is silently dropped.
+
 ## Swaps
 
 ```typescript
@@ -255,6 +271,7 @@ const { data } = await cred.payouts.onboardPayoutAccount({
   refresh_url: 'https://myapp.com/payouts/retry',
 });
 // send the player to data.onboarding_url
+// return_url and refresh_url must be on an allowed domain, else 400 REDIRECT_NOT_ALLOWED
 
 const payout = await cred.payouts.redeem(
   { user_id: 'user_123', credit_type_id: 'ct_123', amount: 500, destination: data!.stripe_account_id },
@@ -270,7 +287,8 @@ if (payout.error?.code === 'PAYOUT_PENDING') {
 ```
 
 `destination` must be the user's own account from `onboardPayoutAccount`
-(else `400 INVALID_DESTINATION`).
+(else `400 INVALID_DESTINATION`). Owners add redirect domains under
+**Dashboard → Payments → Allowed redirect domains**.
 
 ## Escrow / credit holds
 
@@ -299,6 +317,9 @@ const { data } = await cred.wallets.get({ user_email: 'user@example.com' }); // 
 const { data: deposits } = await cred.wallets.deposits({ user_id: 'user_123' });
 await cred.wallets.remove({ user_email: 'user@example.com' });
 ```
+
+Attaching an address only matches deposits that arrive later: a deposit already
+recorded as `unattributed` stays uncredited.
 
 Issuing on a credit type that mints returns `on_chain` (`enqueued` or
 `skipped` with a `reason`); the ledger issuance succeeds either way.
@@ -340,7 +361,8 @@ if (!result.success) {
 result.requestId;          // also set on successful responses
 ```
 
-Codes that apply to every call:
+Codes that apply to every `credits-api` call (everything except
+`checkout.create` and `x402.supported`, see below):
 
 | Status | `code` | Meaning |
 | --- | --- | --- |
@@ -349,6 +371,11 @@ Codes that apply to every call:
 | 402 | `PLATFORM_CREDITS_EXHAUSTED` | Your project's CRD platform balance is spent (`details.credits_remaining`); top up, or pay the x402 offer |
 | 400 | `INVALID_IDEMPOTENCY_KEY` | `Idempotency-Key` longer than 255 characters |
 | 409 | `IDEMPOTENCY_KEY_REUSED` | The key was already used for a different request |
+
+`checkout.create` goes to `hosted-checkout` instead, which is not rate-limited
+or CRD-metered. An invalid or disabled key is a `401` with no `code`, so check
+`status`; only an expired key returns `API_KEY_EXPIRED`. `x402.supported` is
+public: no key and no CRD charge, rate-limited per IP (`429 RATE_LIMITED`).
 
 Every response carries an `X-Request-Id` header and every error body a
 `request_id`. Pass your own with `{ requestId }` (8–128 chars: letters, digits,

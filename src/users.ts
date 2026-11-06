@@ -73,7 +73,9 @@ export class UsersAPI extends BaseResource {
 
   /**
    * Update a user's information. Only the fields you send change; a call with
-   * no updatable field fails with `400 NO_FIELDS_TO_UPDATE`.
+   * no updatable field fails with `400 NO_FIELDS_TO_UPDATE`. `metadata` replaces
+   * the stored object, except `referral_code` (kept unless you send it) and
+   * `stripe_account_id` (Cred-only: a value you send is silently dropped).
    *
    * @example
    * ```typescript

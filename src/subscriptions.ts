@@ -51,7 +51,9 @@ export class SubscriptionsAPI extends BaseResource {
 
   /**
    * Mint a short-lived Stripe customer-portal URL (update card, or `flow:
-   * "overview"` for invoices). Create it when the customer clicks.
+   * "overview"` for invoices). Create it when the customer clicks. `return_url`
+   * on a domain outside Dashboard → Payments → Allowed redirect domains fails
+   * with `400 REDIRECT_NOT_ALLOWED`.
    *
    * @example
    * ```typescript

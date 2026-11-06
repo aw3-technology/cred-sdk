@@ -17,16 +17,22 @@ export class CheckoutAPI extends BaseResource {
   /**
    * Create a hosted checkout session.
    *
-   * Use a `pricing_tier_id` for a pre-defined package (plus `credit_type_id`
-   * when the tier applies to several credit types), or `credit_type_id` +
+   * Use a `pricing_tier_id` for a pre-defined package, or `credit_type_id` +
    * `amount` for a custom amount priced at the credit type's USD-per-credit
-   * `exchange_rate`.
+   * `exchange_rate`. Send `credit_type_id` with a tier too: omitted on a tier
+   * that applies to several credit types, the oldest active one is used
+   * silently.
+   *
+   * `success_url` and `cancel_url` must be on a Cred host or a domain listed
+   * under Dashboard → Payments → Allowed redirect domains. On any other domain
+   * the session is still created and silently redirects to Cred's default pages.
    *
    * @example
    * ```typescript
    * // One-time package, and keep the card for auto top-up
    * const { data } = await cred.checkout.create({
    *   pricing_tier_id: 'tier_123',
+   *   credit_type_id: 'ct_123',
    *   user_id: 'user_456',
    *   user_email: 'buyer@example.com',
    *   save_payment_method: true,
@@ -39,7 +45,7 @@ export class CheckoutAPI extends BaseResource {
    * @example
    * ```typescript
    * // Monthly subscription (tier billing_type must be "recurring" or "both")
-   * await cred.checkout.create({ pricing_tier_id: 'tier_123', user_id: 'user_456', billing: 'recurring' });
+   * await cred.checkout.create({ pricing_tier_id: 'tier_123', credit_type_id: 'ct_123', user_id: 'user_456', billing: 'recurring' });
    *
    * // Custom amount
    * await cred.checkout.create({ credit_type_id: 'ct_123', amount: 500, user_id: 'user_456' });
@@ -56,7 +62,7 @@ export class CheckoutAPI extends BaseResource {
    *
    * @example
    * ```typescript
-   * const url = await cred.checkout.createUrl({ pricing_tier_id: 'tier_123', user_id: 'user_456' });
+   * const url = await cred.checkout.createUrl({ pricing_tier_id: 'tier_123', credit_type_id: 'ct_123', user_id: 'user_456' });
    * ```
    */
   async createUrl(params: CreateCheckoutParams): Promise<string | null> {
