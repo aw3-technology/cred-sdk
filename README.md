@@ -10,7 +10,7 @@ Docs: https://cred.diy/docs/sdk · API reference: https://cred.diy/docs/api-refe
 ## Installation
 
 ```bash
-npm install @cred-diy/sdk
+npm install github:aw3-technology/cred-sdk
 ```
 
 Runs on Node 18+, Deno, Bun, edge runtimes and the browser (anything with
