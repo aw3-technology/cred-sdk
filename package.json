@@ -1,0 +1,57 @@
+{
+  "name": "@cred-diy/sdk",
+  "version": "0.1.0",
+  "description": "TypeScript SDK for cred.diy: issue, deduct and check application credits, wallets, checkout and swaps from your code.",
+  "license": "MIT",
+  "homepage": "https://cred.diy/docs/sdk",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aw3-technology/cred-sdk.git"
+  },
+  "keywords": [
+    "credits",
+    "usage-based billing",
+    "prepaid credits",
+    "credit ledger",
+    "wallet",
+    "api",
+    "x402",
+    "stripe"
+  ],
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "sideEffects": false,
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "test": "vitest run",
+    "prepublishOnly": "node scripts/build.mjs"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "bugs": {
+    "url": "https://github.com/aw3-technology/cred-sdk/issues"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0",
+    "typescript": "^5.8.0",
+    "vitest": "^3.0.0"
+  }
+}
